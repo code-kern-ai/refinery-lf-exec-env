@@ -1,7 +1,6 @@
 numpy==1.22.0
 textblob==0.17.1
 scikit-learn==1.0.1
-Vocabulary==1.0.4
 nltk==3.6.7
 spacy==3.2.2
 requests==2.28.1
