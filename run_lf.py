@@ -32,8 +32,11 @@ def run_extraction(record_dict_list):
 
 def run_checks(progress):
     if progress:
-        print(f"Tokenization is still in progress. Currently {progress}% done.")
-        print("Function will run with reduced set.")
+        print(
+            f"Tokenization is still in progress. Currently {progress}% done.",
+            flush=True,
+        )
+        print("Function will run with reduced set.", flush=True)
 
 
 # https://www.delftstack.com/howto/python/python-split-list-into-chunks/#split-list-in-python-to-chunks-using-the-lambda-islice-method
@@ -72,7 +75,7 @@ def parse_data_to_record_dict(record_chunk):
 if __name__ == "__main__":
     _, progress, iso2_code, payload_url = sys.argv
     run_checks(progress)
-    print("Preparing data for labeling function.")
+    print("Preparing data for labeling function.", flush=True)
     # This import statement will always be highlighted as a potential error, as during devtime,
     # the script `labeling_functions` does not exist. It will be inserted at runtime
     from labeling_functions import lf
@@ -83,7 +86,7 @@ if __name__ == "__main__":
         docbin_data = json.load(infile)
 
     is_extraction = inspect.isgeneratorfunction(lf)
-    print("Running labeling function.")
+    print("Running labeling function.", flush=True)
     workload = len(docbin_data)
     lf_results_by_record_id = {}
     chunk_size = 100
@@ -94,7 +97,7 @@ if __name__ == "__main__":
         else:
             lf_results_by_record_id.update(run_classification(record_dict_list))
         progress = (idx * chunk_size) / workload
-        print("progress: ", progress)
+        print("progress: ", progress, flush=True)
 
-    print("Finished execution.")
+    print("Finished execution.", flush=True)
     requests.put(payload_url, json=lf_results_by_record_id)
