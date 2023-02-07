@@ -93,6 +93,8 @@ if __name__ == "__main__":
             lf_results_by_record_id.update(run_extraction(record_dict_list))
         else:
             lf_results_by_record_id.update(run_classification(record_dict_list))
+        progress = (idx * chunk_size) / workload
+        print("progress: ", progress)
 
     print("Finished execution.")
     requests.put(payload_url, json=lf_results_by_record_id)
