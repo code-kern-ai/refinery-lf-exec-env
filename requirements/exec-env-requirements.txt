@@ -167,8 +167,6 @@ pymeeus==0.5.12
     # via
     #   convertdate
     #   holidays
-pypdf==3.15.5
-    # via -r exec-env-requirements.in
 pyphen==0.14.0
     # via
     #   textacy
@@ -272,11 +270,10 @@ typing-extensions==4.7.1
     # via
     #   inflect
     #   pydantic
-    #   pypdf
     #   sqlalchemy
 tzdata==2023.3
     # via pandas
-urllib3==2.0.6
+urllib3==2.0.7
     # via requests
 vadersentiment==3.3.2
     # via -r exec-env-requirements.in
