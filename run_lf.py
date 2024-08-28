@@ -55,7 +55,7 @@ def load_data_dict(record):
     doc_bin_loaded = DocBin().from_bytes(byte)
     docs = list(doc_bin_loaded.get_docs(vocab))
     data_dict = {}
-    for (col, doc) in zip(record["columns"], docs):
+    for col, doc in zip(record["columns"], docs):
         data_dict[col] = doc
 
     for key in record:
