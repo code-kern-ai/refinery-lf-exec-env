@@ -3,7 +3,7 @@
 
 Execution environment for labeling functions in [refinery](https://github.com/code-kern-ai/refinery). Containerized function as a service to execute user-defined Python scripts.
 
-For classification tasks, the schema is
+For classification tasks, the schema is:
 ```python
 from typing import Dict, Any
 
@@ -11,7 +11,7 @@ def my_labeling_function(record: Dict[str: Any]) -> str:
   return "my_label"
 ```
 
-For extraction tasks, the schema is
+For extraction tasks, the schema is:
 ```python
 from typing import Dict, Any, Tuple
 
