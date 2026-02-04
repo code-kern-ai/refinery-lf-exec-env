@@ -1,0 +1,230 @@
+---
+description: Python coding standards and type hint conventions
+globs: **/*.py
+alwaysApply: false
+---
+
+# Python Coding Standards
+
+## Type Hints
+
+### Modern Syntax (Python 3.10+)
+```python
+# ✅ GOOD - Use modern syntax
+def process_records(records: list[dict[str, Any]]) -> dict[str, str]:
+    pass
+
+def get_value(key: str) -> str | None:
+    pass
+
+# ❌ BAD - Avoid old typing module syntax
+from typing import List, Dict, Optional
+def process_records(records: List[Dict[str, Any]]) -> Dict[str, str]:
+    pass
+
+def get_value(key: str) -> Optional[str]:
+    pass
+```
+
+### Type Aliases
+```python
+# ✅ GOOD - Use TypeAlias for complex types
+from typing import TypeAlias
+
+RecordDict: TypeAlias = dict[str, Any]
+RecordList: TypeAlias = list[RecordDict]
+
+# ❌ BAD - Simple assignment
+RecordDict = dict[str, Any]
+```
+
+### Protocols and Abstract Types
+```python
+# ✅ GOOD - Use protocols for flexible interfaces
+from typing import Protocol
+
+class DataProcessor(Protocol):
+    def process(self, data: dict[str, Any]) -> Any: ...
+
+def run_processor(processor: DataProcessor, data: dict[str, Any]) -> Any:
+    return processor.process(data)
+
+# ✅ GOOD - Use abstract types for function parameters
+from collections.abc import Mapping, Sequence
+
+def process_mapping(data: Mapping[str, Any]) -> None:
+    pass  # Accepts dict, OrderedDict, etc.
+```
+
+## Error Handling
+
+### Specific Exceptions
+```python
+# ✅ GOOD - Catch specific exceptions
+try:
+    value = int(user_input)
+except ValueError as e:
+    logger.error(f"Invalid integer input: {user_input}", exc_info=True)
+    raise
+
+# ❌ BAD - Bare except or catching Exception
+try:
+    value = int(user_input)
+except Exception:  # Too broad
+    pass
+```
+
+### Preserve Tracebacks
+```python
+# ✅ GOOD - Preserve original exception context
+try:
+    result = process_labeling_function(record["data"])
+except ValueError as e:
+    print(f"Labeling function failed for record {record['id']}", flush=True)
+    raise ProcessingError(f"Failed to process record {record['id']}") from e
+
+# ❌ BAD - Lose original exception
+try:
+    result = process_labeling_function(record["data"])
+except ValueError as e:
+    raise ProcessingError(str(e))  # Loses traceback
+```
+
+### Error Messages
+```python
+# ✅ GOOD - Clear, actionable error messages
+if not isinstance(value, int):
+    raise TypeError(
+        f"Expected int, got {type(value).__name__} for attribute '{attr_name}'. "
+        f"Value: {value}"
+    )
+
+# ❌ BAD - Vague error messages
+if not isinstance(value, int):
+    raise TypeError("Invalid type")
+```
+
+## Container Output
+
+### Use Print Statements with Flush
+```python
+# ✅ GOOD - Use print with flush=True for container stdout
+def process_record(record: dict[str, Any]) -> None:
+    print(f"Processing record {record['id']}", flush=True)
+    try:
+        result = run_labeling_function(record)
+        print(f"Result: {result}", flush=True)
+    except Exception as e:
+        print(f"Failed to process record {record['id']}: {e}", flush=True)
+        raise
+
+# ❌ BAD - Print without flush (may buffer in containers)
+def process_record(record: dict[str, Any]) -> None:
+    print(f"Processing record {record['id']}")  # May not appear immediately
+```
+
+### Progress Reporting
+- Use simple progress format: `print("progress: ", progress, flush=True)`
+- Report status messages clearly: "Preparing data for labeling function.", "Running labeling function.", "Finished execution."
+- All print statements must include `flush=True` for proper container logging
+
+## Constants and Configuration
+
+### Constants
+```python
+# ✅ GOOD - Named constants
+CHUNK_SIZE = 100
+DEFAULT_ISO2_CODE = "en"
+
+def process_records(docbin_data: list[dict[str, Any]]) -> None:
+    for idx, chunk in enumerate(chunk_data(docbin_data, CHUNK_SIZE)):
+        process_chunk(chunk)
+
+# ❌ BAD - Magic numbers
+def process_records(docbin_data: list[dict[str, Any]]) -> None:
+    for idx, chunk in enumerate(chunk_data(docbin_data, 100)):  # What does 100 mean?
+        process_chunk(chunk)
+```
+
+### Task Type Detection
+```python
+# ✅ GOOD - Use inspect to detect function type
+import inspect
+
+def determine_task_type(lf: Callable) -> str:
+    if inspect.isgeneratorfunction(lf):
+        return "extraction"
+    return "classification"
+
+def run_labeling_function(record: dict[str, Any], lf: Callable) -> Any:
+    if inspect.isgeneratorfunction(lf):
+        return list(lf(record["data"]))  # Extract all results
+    return lf(record["data"])  # Single classification result
+
+# ❌ BAD - Hardcoded assumptions
+def run_labeling_function(record: dict[str, Any], lf: Callable) -> Any:
+    return lf(record["data"])  # Assumes classification, breaks for extraction
+```
+
+## Function Design
+
+### Single Responsibility
+```python
+# ✅ GOOD - Focused functions
+def load_data_dict(record: dict[str, Any], vocab: Vocab) -> dict[str, Any]:
+    """Load and deserialize DocBin data from record."""
+    byte = bytes.fromhex(record["bytes"][2:])  # Remove \\x prefix
+    doc_bin_loaded = DocBin().from_bytes(byte)
+    docs = list(doc_bin_loaded.get_docs(vocab))
+    # ... build data_dict
+    return data_dict
+
+def parse_data_to_record_dict(record_chunk: list[dict[str, Any]], vocab: Vocab) -> list[dict[str, Any]]:
+    """Parse chunk of records into format expected by labeling function."""
+    return [{"id": r["record_id"], "data": load_data_dict(r, vocab)} for r in record_chunk]
+
+# ❌ BAD - Function doing too much
+def process_record(record: dict[str, Any], vocab: Vocab) -> Any:
+    # Loading
+    byte = bytes.fromhex(record["bytes"][2:])
+    # Processing
+    result = run_labeling_function(record)
+    # Formatting
+    format_result(record["id"], result)
+    # Uploading
+    upload_result(record["id"], result)
+    return result
+```
+
+### Function Length
+- Keep functions under 50 lines when possible
+- Extract complex logic into helper functions
+- Use descriptive names that explain purpose
+
+## Imports
+
+### Import Organization
+```python
+# ✅ GOOD - Organized imports
+# Standard library
+import inspect
+import json
+import sys
+from collections import defaultdict
+from itertools import islice
+from typing import Any, Callable
+
+# Third-party
+import requests
+import spacy
+from spacy.tokens import DocBin
+
+# Runtime imports (exist at runtime, not dev time)
+# from labeling_functions import lf  # Commented at dev time
+```
+
+### Import Best Practices
+- Group imports: stdlib, third-party, local
+- Use absolute imports when possible
+- Avoid wildcard imports (`from module import *`)
+- Import only what you need

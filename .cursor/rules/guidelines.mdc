@@ -1,0 +1,92 @@
+---
+description: Core coding guidelines and best practices for refinery-lf-exec-env
+alwaysApply: true
+---
+
+# Core Coding Guidelines
+
+## Project Overview
+
+This is a containerized execution environment for labeling functions in refinery. The codebase processes data records using spacy DocBin format, executes user-defined labeling functions (classification or extraction), and returns results via HTTP PUT requests. The environment runs as a containerized function-as-a-service.
+
+## General Principles
+
+### Code Quality
+- **Readability over cleverness**: Code is read far more often than written
+- **Explicit over implicit**: Make intentions clear through naming and structure
+- **Fail fast**: Validate inputs early and raise clear errors
+- **Single responsibility**: Functions should do one thing well
+
+### Error Handling
+- Use specific exception types, not bare `except Exception`
+- Preserve traceback information when re-raising exceptions
+- Provide clear, actionable error messages with context
+- For container output, use `print()` statements with `flush=True` for progress and status messages
+
+### Naming Conventions
+- Functions and variables: `snake_case`
+- Constants: `UPPER_SNAKE_CASE`
+- Classes: `PascalCase`
+- Private functions: Prefix with `__` (double underscore) only when truly private
+- Avoid magic suffixes like `_a2vybg` in new code - use descriptive names
+
+### Type Hints
+- Use type hints for all function signatures
+- Prefer modern Python 3.10+ syntax:
+  - `str | None` instead of `Optional[str]`
+  - `list[str]` instead of `List[str]`
+  - `dict[str, int]` instead of `Dict[str, int]`
+- Use `Any` sparingly - prefer specific types or protocols
+- Use `object` instead of `Any` when accepting any object
+
+### Global Variables
+- **Avoid global variables** when possible
+- If globals are necessary (e.g., runtime configuration), document why
+- Consider using a configuration class or dataclass instead
+- Group related globals into a single namespace object
+
+### Progress Reporting
+- Use `print()` statements with `flush=True` for container stdout compatibility
+- Report progress as percentage: `print("progress: ", progress, flush=True)`
+- Include clear status messages: "Preparing data for labeling function.", "Running labeling function.", "Finished execution."
+- Use simple, parseable progress format for container orchestration
+
+### Magic Numbers and Strings
+- Extract magic numbers to named constants
+- Use enums or constants for string literals that represent states/types
+- Document the meaning of non-obvious values
+
+### Function Length
+- Keep functions focused and under 50 lines when possible
+- Extract complex logic into helper functions
+- Use descriptive function names that explain purpose
+
+### Comments
+- Write self-documenting code first
+- Add comments for "why", not "what"
+- Document complex algorithms or business logic
+- Keep comments up-to-date with code changes
+- Note when imports are expected to exist at runtime but not at dev time (e.g., `labeling_functions` module)
+
+## Labeling Function Execution
+
+### Function Signatures
+- **Classification**: `lf(record: dict[str, Any]) -> str | None`
+  - Returns a label string or None
+  - Result format: `{record_id: [1.0, label_name]}`
+
+- **Extraction**: `lf(record: dict[str, Any]) -> Generator[tuple[str, int, int], None, None]`
+  - Yields tuples of (label_name, start_idx, end_idx)
+  - Result format: `{record_id: [[1.0, label_name, start_idx, end_idx], ...]}`
+
+### Data Processing
+- Process records in chunks (default: 100 records per chunk)
+- Use `inspect.isgeneratorfunction()` to detect extraction vs classification
+- Handle spacy DocBin format: hex-encoded bytes starting with `\\x`
+- Use `spacy.blank(iso2_code).vocab` for DocBin deserialization
+
+### Container Execution
+- Script receives command-line arguments: `progress`, `iso2_code`, `payload_url`
+- Download data files via curl before Python execution
+- Upload results via `requests.put(payload_url, json=results)`
+- All output must use `flush=True` for proper container logging
