@@ -10,6 +10,13 @@ import inspect
 from collections import defaultdict
 
 
+def download_file(url: str, target_file: str) -> None:
+    response = requests.get(url, timeout=60)
+    response.raise_for_status()
+    with open(target_file, "wb") as outfile:
+        outfile.write(response.content)
+
+
 def run_classification(record_dict_list):
     lf_results_by_record_id = {}
     for record_dict in record_dict_list:
@@ -73,7 +80,26 @@ def parse_data_to_record_dict(record_chunk):
 
 
 if __name__ == "__main__":
-    _, progress, iso2_code, payload_url = sys.argv
+    if len(sys.argv) != 7:
+        raise ValueError(
+            "Expected arguments: <docbin_url> <labeling_functions_url> "
+            "<knowledge_url> <progress> <iso2_code> <payload_url>"
+        )
+
+    (
+        _,
+        docbin_url,
+        labeling_functions_url,
+        knowledge_url,
+        progress,
+        iso2_code,
+        payload_url,
+    ) = sys.argv
+
+    download_file(docbin_url, "docbin_full.json")
+    download_file(labeling_functions_url, "labeling_functions.py")
+    download_file(knowledge_url, "knowledge.py")
+
     run_checks(progress)
     print("Preparing data for labeling function.", flush=True)
     # This import statement will always be highlighted as a potential error, as during devtime,
